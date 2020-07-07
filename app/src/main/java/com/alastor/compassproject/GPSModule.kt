@@ -3,12 +3,7 @@ package com.alastor.compassproject
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Dialog
-import android.content.Context
-import android.content.IntentSender
-import android.os.Looper
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
 import com.google.android.gms.common.ConnectionResult.*
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.api.ResolvableApiException
@@ -17,10 +12,12 @@ import com.google.android.gms.tasks.Task
 
 class GPSModule(val mSelectedLatitude: Float,
                 val mSelectedLongitude: Float,
-                private val mLifecycle: Lifecycle,
+                private val fusedLocationProviderClient: FusedLocationProviderClient,
+                private val googleApiAvailability: GoogleApiAvailability,
                 private val mGPSCallback: GPSCallback) : LifecycleObserver {
 
     private var isGoogleServiceChecked: Boolean = false
+    private var isLocationSettingsChecked: Boolean = false
 
     companion object {
         private const val REQUEST_CHECK_SETTINGS = 0
@@ -36,56 +33,56 @@ class GPSModule(val mSelectedLatitude: Float,
         override fun onLocationResult(locationResult: LocationResult?) {
             locationResult ?: return
             for (location in locationResult.locations) {
-                // Update UI with location data
+
             }
         }
     }
 
-    init {
-        mLifecycle.addObserver(this);
+    public fun register(activity: Activity) {
+        checkLocationSetting(activity)
+        checkGooglePlayService(activity)
     }
 
-    @SuppressLint("MissingPermission")
-    public fun enable(context: Context) {
-        val fusedLocationProviderClient = FusedLocationProviderClient(context)
-        fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+    public fun unregister() {
+        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-    fun registerListener() {
-
-    }
-
-    @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-    fun unregisterListener() {
-        //fusedLocationClient.removeLocationUpdates(locationCallback)
-    }
-
-    public fun checkGooglePlayService(activity: Activity,
-                                      googleApiAvailability: GoogleApiAvailability): Dialog? {
-        isGoogleServiceChecked = true
+    private fun checkGooglePlayService(activity: Activity): Dialog? {
         val code = googleApiAvailability.isGooglePlayServicesAvailable(activity.baseContext)
         if (!isGooglePlayServicesAvailable(code)) {
-            return googleApiAvailability.getErrorDialog(activity, code, 0)
+            val dialog = googleApiAvailability.getErrorDialog(activity, code, 0)
+            isLocationSettingsChecked = false
+            mGPSCallback.onGooglePlayServicesOutDate(dialog)
+            return dialog
         }
+        isGoogleServiceChecked = true
         return null
     }
 
-    public fun checkLocationSetting(activity: Activity) {
+    private fun checkLocationSetting(activity: Activity) {
         val builder = LocationSettingsRequest.Builder()
                 .addLocationRequest(locationRequest)
 
         val client: SettingsClient = LocationServices.getSettingsClient(activity.baseContext)
         val task: Task<LocationSettingsResponse> = client.checkLocationSettings(builder.build())
-        task.addOnFailureListener { exception ->
-            if (exception is ResolvableApiException) {
-                try {
-                    exception.startResolutionForResult(activity, REQUEST_CHECK_SETTINGS)
-                    //TODO add onActivityResult()
-                } catch (sendEx: IntentSender.SendIntentException) {
-                    // Ignore the error.
+        task.apply {
+            addOnFailureListener { exception ->
+                if (exception is ResolvableApiException) {
+                    isLocationSettingsChecked = false
+                    mGPSCallback.onLackOfLocationSettings()
                 }
             }
+            addOnSuccessListener {
+                isLocationSettingsChecked = true
+                maybeNotifySuccessRegister()
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun maybeNotifySuccessRegister() {
+        if (isGoogleServiceChecked && isLocationSettingsChecked) {
+            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null)
         }
     }
 

@@ -4,10 +4,10 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
+import kotlin.math.roundToInt
 
 class CompassModule(private val mSensorManager: SensorManager,
                     private val mLifecycle: Lifecycle,
@@ -15,6 +15,11 @@ class CompassModule(private val mSensorManager: SensorManager,
 
     private val mAccelerometer: Sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
     private val mMagnetometer: Sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+
+    // Current data from accelerometer & magnetometer.  The arrays hold values
+    // for X, Y, and Z.
+    private var mGravity: FloatArray? = null
+    private var mGeomagnetic: FloatArray? = null
 
     init {
         mLifecycle.addObserver(this);
@@ -24,7 +29,6 @@ class CompassModule(private val mSensorManager: SensorManager,
     fun registerListener() {
         mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL)
         mSensorManager.registerListener(this, mMagnetometer, SensorManager.SENSOR_DELAY_NORMAL)
-
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
@@ -33,21 +37,12 @@ class CompassModule(private val mSensorManager: SensorManager,
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        if (mLifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-            sensor?.apply {
-                callback.onAccuracyChanged(this, accuracy)
-            }
-        }
-    }
 
-     private var mGravity: FloatArray? = null
-     private var mGeomagnetic: FloatArray? = null
+    }
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (mLifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
             event?.also {
-                callback.onSensorChanged(it)
-
                 if (it.sensor.type == Sensor.TYPE_ACCELEROMETER) {
                     mGravity = it.values
                 }
@@ -55,18 +50,20 @@ class CompassModule(private val mSensorManager: SensorManager,
                     mGeomagnetic = it.values
                 }
 
-                val R = FloatArray(9)
-                val I = FloatArray(9)
+                val rotationMatrix = FloatArray(9)
 
                 if (mGravity != null && mGeomagnetic != null) {
-                    val success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic)
+                    val success = SensorManager.getRotationMatrix(rotationMatrix, null, mGravity, mGeomagnetic)
                     if (success) {
                         val orientation = FloatArray(3)
-                        SensorManager.getOrientation(R, orientation)
-                        Log.e("TAG", "onSensorChanged: ${orientation[0]}")
+                        SensorManager.getOrientation(rotationMatrix, orientation)
+                        var degree: Int = Math.toDegrees(orientation[0].toDouble()).roundToInt()
+                        if (degree < 0) {
+                            degree += 360
+                        }
+                        callback.onSensorChanged(degree)
                     }
                 }
-
             }
         }
     }

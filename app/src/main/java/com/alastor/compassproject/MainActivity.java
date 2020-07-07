@@ -1,12 +1,11 @@
 package com.alastor.compassproject;
 
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.animation.RotateAnimation;
+import android.widget.TextView;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
@@ -15,20 +14,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        final TextView zAxis = findViewById(R.id.tv_x_axis);
+
         final SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        final CompassModule compassModule = new CompassModule(sensorManager, getLifecycle(), getCompassCallback());
-    }
-
-    private CompassCallback getCompassCallback() {
-        return new CompassCallback() {
-            @Override
-            public void onAccuracyChanged(@Nullable Sensor sensor, int accuracy) {
-                Log.e("TAG", "onAccuracyChanged: ");
-            }
-
-            @Override
-            public void onSensorChanged(@Nullable SensorEvent event) {
-            }
-        };
+        final CompassModule compassModule = new CompassModule(sensorManager, getLifecycle(), degree -> {
+            zAxis.setText("Z: " + degree);
+        });
     }
 }

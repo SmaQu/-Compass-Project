@@ -2,26 +2,25 @@ package com.alastor.compassproject
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.Dialog
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
 import com.google.android.gms.common.ConnectionResult.*
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.tasks.Task
+import java.lang.ref.WeakReference
 
-class GPSModule(val mSelectedLatitude: Float,
-                val mSelectedLongitude: Float,
-                private val fusedLocationProviderClient: FusedLocationProviderClient,
-                private val googleApiAvailability: GoogleApiAvailability,
-                private val mGPSCallback: GPSCallback) : LifecycleObserver {
+class GPSModule : LifecycleObserver {
 
     private var isGoogleServiceChecked: Boolean = false
     private var isLocationSettingsChecked: Boolean = false
+    private var mLifecycle: Lifecycle? = null;
 
-    companion object {
-        private const val REQUEST_CHECK_SETTINGS = 0
-    }
+    private lateinit var mFusedLocationProviderClient: FusedLocationProviderClient
+    private lateinit var mGoogleApiAvailability: GoogleApiAvailability
+    private lateinit var mGPSCallbackWeakReference: WeakReference<GPSCallback>
 
     private val locationRequest = LocationRequest.create().apply {
         interval = 10000
@@ -33,56 +32,83 @@ class GPSModule(val mSelectedLatitude: Float,
         override fun onLocationResult(locationResult: LocationResult?) {
             locationResult ?: return
             for (location in locationResult.locations) {
-
+                mGPSCallbackWeakReference.get()?.let {
+                    it.onLocationDetect(location) }
             }
         }
     }
 
+    constructor(fusedLocationProviderClient: FusedLocationProviderClient,
+                googleApiAvailability: GoogleApiAvailability,
+                gpsCallback: GPSCallback) {
+        mFusedLocationProviderClient = fusedLocationProviderClient
+        mGoogleApiAvailability = googleApiAvailability
+        mGPSCallbackWeakReference = WeakReference(gpsCallback)
+    }
+
+    constructor(mFusedLocationProviderClient: FusedLocationProviderClient,
+                mGoogleApiAvailability: GoogleApiAvailability,
+                mLifecycle: Lifecycle,
+                mGPSCallback: GPSCallback)
+            : this(mFusedLocationProviderClient, mGoogleApiAvailability, mGPSCallback) {
+        this.mLifecycle = mLifecycle
+        mLifecycle.addObserver(this)
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     public fun register(activity: Activity) {
         checkLocationSetting(activity)
-        checkGooglePlayService(activity)
     }
 
+    @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
     public fun unregister() {
-        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
+        mFusedLocationProviderClient.removeLocationUpdates(locationCallback)
     }
 
-    private fun checkGooglePlayService(activity: Activity): Dialog? {
-        val code = googleApiAvailability.isGooglePlayServicesAvailable(activity.baseContext)
-        if (!isGooglePlayServicesAvailable(code)) {
-            val dialog = googleApiAvailability.getErrorDialog(activity, code, 0)
-            isLocationSettingsChecked = false
-            mGPSCallback.onGooglePlayServicesOutDate(dialog)
-            return dialog
+    private fun checkGooglePlayService(activity: Activity?) {
+        activity?.let {
+            val code = mGoogleApiAvailability.isGooglePlayServicesAvailable(activity.baseContext)
+            if (!isGooglePlayServicesAvailable(code)) {
+                val dialog = mGoogleApiAvailability.getErrorDialog(activity, code, 0)
+                isLocationSettingsChecked = false
+                mGPSCallbackWeakReference.get()?.let {
+                    it.onGooglePlayServicesOutDate(dialog) }
+            }
+            isGoogleServiceChecked = true
         }
-        isGoogleServiceChecked = true
-        return null
     }
 
     private fun checkLocationSetting(activity: Activity) {
+        //Safety implementation of Activity
+        val weakReference: WeakReference<Activity> = WeakReference(activity)
         val builder = LocationSettingsRequest.Builder()
                 .addLocationRequest(locationRequest)
 
-        val client: SettingsClient = LocationServices.getSettingsClient(activity.baseContext)
-        val task: Task<LocationSettingsResponse> = client.checkLocationSettings(builder.build())
-        task.apply {
-            addOnFailureListener { exception ->
-                if (exception is ResolvableApiException) {
-                    isLocationSettingsChecked = false
-                    mGPSCallback.onLackOfLocationSettings()
+        weakReference.get()?.let { weakReferenceActivity ->
+            val client: SettingsClient = LocationServices.getSettingsClient(weakReferenceActivity)
+            val task: Task<LocationSettingsResponse> = client.checkLocationSettings(builder.build())
+            task.run {
+                addOnFailureListener { exception ->
+                    if (exception is ResolvableApiException) {
+                        isLocationSettingsChecked = false
+                        mGPSCallbackWeakReference.get()?.let {
+                            it.onLackOfLocationSettings() }
+                    }
+                }
+                addOnSuccessListener {
+                    isLocationSettingsChecked = true
+                    checkGooglePlayService(weakReferenceActivity)
+                    maybeNotifySuccessRegister()
                 }
             }
-            addOnSuccessListener {
-                isLocationSettingsChecked = true
-                maybeNotifySuccessRegister()
-            }
+
         }
     }
 
     @SuppressLint("MissingPermission")
     private fun maybeNotifySuccessRegister() {
         if (isGoogleServiceChecked && isLocationSettingsChecked) {
-            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null)
+            mFusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null)
         }
     }
 

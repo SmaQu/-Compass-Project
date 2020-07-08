@@ -4,6 +4,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
@@ -45,7 +46,7 @@ class CompassModule(private val mSensorManager: SensorManager,
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        event?.also {
+        event?.let {
             if (it.sensor.type == Sensor.TYPE_ACCELEROMETER) {
                 mGravity = it.values
             }
@@ -64,10 +65,9 @@ class CompassModule(private val mSensorManager: SensorManager,
                     if (degree < 0) {
                         degree += 360
                     }
-                    mCallback.onSensorChanged(degree)
+                    mCallback.onSensorChanged(degree, it.values[0])
                 }
             }
-
         }
     }
 }

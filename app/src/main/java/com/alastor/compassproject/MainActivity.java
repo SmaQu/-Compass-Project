@@ -1,8 +1,8 @@
 package com.alastor.compassproject;
 
 import android.content.pm.PackageManager;
-import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -16,28 +16,30 @@ import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 public class MainActivity extends AppCompatActivity {
 
     private static final int PERMISSION_REQUEST_CODE = 0;
+    private MainViewModel mMainViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         final TextView zAxis = findViewById(R.id.tv_z_axis);
+        zAxis.setOnClickListener(v -> enableGPS());
 
-        final SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-
-        MainViewModel mainViewModel = new ViewModelProvider(this,
+        mMainViewModel = new ViewModelProvider(this,
                 new ViewModelProvider.AndroidViewModelFactory(getApplication())).get(MainViewModel.class);
-
-        mainViewModel.registerListeners(this);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        //TODO only if activated
-        if (arePermissionsGranted()) {
-            //request
-        }
+        mMainViewModel.getMCompassModule().registerListener();
+        enableGPS();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mMainViewModel.getMCompassModule().unregisterListener();
     }
 
     @Override
@@ -45,7 +47,13 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == PERMISSION_REQUEST_CODE &&
                 grantResults.length > 0 &&
                 grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            //request
+            mMainViewModel.enableGPS(this);
+        }
+    }
+
+    private void enableGPS() {
+        if (mMainViewModel.isGPSEnabled() && arePermissionsGranted()) {
+            mMainViewModel.enableGPS(this);
         }
     }
 

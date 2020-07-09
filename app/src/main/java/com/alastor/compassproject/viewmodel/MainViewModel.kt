@@ -48,7 +48,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var mSelectedLongitude: Double? = null
 
     var isGPSEnabled = false
-    private val mGPSModule: GPSModule by lazy {
+    private val gpsModule: GPSModule by lazy {
         GPSModule(FusedLocationProviderClient(getApplication<Application>().baseContext),
                 GoogleApiAvailability.getInstance(), getGPSCallbacks())
     }
@@ -80,11 +80,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     public fun registerGPS(activity: Activity) {
-        mGPSModule.register(activity)
+        gpsModule.register(activity)
     }
 
     public fun unRegisterGPS() {
-        mGPSModule.unregister()
+        gpsModule.unregister()
     }
 
     public fun isDestinationValid(): Boolean {

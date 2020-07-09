@@ -22,8 +22,6 @@ class CompassModule(private val sensorManager: SensorManager,
     private var gravity: FloatArray? = null
     private var geomagnetic: FloatArray? = null
 
-    private var lifecycle: Lifecycle? = null;
-
     fun registerListener() {
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
         sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL)

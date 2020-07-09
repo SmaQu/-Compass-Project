@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity implements LocationPickDialo
     private static final String KEY_LONGITUDE = "key_longitude";
     private static final int PERMISSION_REQUEST_CODE = 0;
     private static final int REQUEST_CHECK_SETTINGS = 1;
-    private MainViewModel mMainViewModel;
+    private MainViewModel mainViewModel;
     private float currentNeedleDegree = 0f;
     private float currentDirectionDegree = 0f;
     private ImageView compassIv;
@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity implements LocationPickDialo
         compassIv = findViewById(R.id.image_compass);
         destinationArrowIv = findViewById(R.id.image_destination_arrow);
 
-        mMainViewModel = new ViewModelProvider(this,
+        mainViewModel = new ViewModelProvider(this,
                 new ViewModelProvider.AndroidViewModelFactory(getApplication())).get(MainViewModel.class);
 
         findViewById(R.id.button_latitude).setOnClickListener(v -> {
@@ -57,25 +57,25 @@ public class MainActivity extends AppCompatActivity implements LocationPickDialo
 
         });
 
-        mMainViewModel.getCompassDirection().observe(this, this::updateCompassDirection);
-        mMainViewModel.getDesiredLocationDirection().observe(this, this::updateDesiredDirection);
-        mMainViewModel.getErrorGoogleService().observe(this, this::showGoogleServiceErrorDialog);
-        mMainViewModel.getErrorLackOfSetting().observe(this, this::showLacOfSettingsErrorDialog);
+        mainViewModel.getCompassDirection().observe(this, this::updateCompassDirection);
+        mainViewModel.getDesiredLocationDirection().observe(this, this::updateDesiredDirection);
+        mainViewModel.getErrorGoogleService().observe(this, this::showGoogleServiceErrorDialog);
+        mainViewModel.getErrorLackOfSetting().observe(this, this::showLacOfSettingsErrorDialog);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        mMainViewModel.registerCompass();
-        if (mMainViewModel.isGPSEnabled())
+        mainViewModel.registerCompass();
+        if (mainViewModel.isGPSEnabled())
             registerGPSIfAllowed();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        mMainViewModel.unRegisterCompass();
-        mMainViewModel.unRegisterGPS();
+        mainViewModel.unRegisterCompass();
+        mainViewModel.unRegisterGPS();
     }
 
     @Override
@@ -99,10 +99,10 @@ public class MainActivity extends AppCompatActivity implements LocationPickDialo
     public void onDialogResponse(@NotNull String requestKey, double locationValue) {
         switch (requestKey) {
             case KEY_LATITUDE:
-                mMainViewModel.setSelectedLatitude(locationValue);
+                mainViewModel.setSelectedLatitude(locationValue);
                 break;
             case KEY_LONGITUDE:
-                mMainViewModel.setSelectedLongitude(locationValue);
+                mainViewModel.setSelectedLongitude(locationValue);
                 break;
         }
         registerGPSIfAllowed();
@@ -114,9 +114,9 @@ public class MainActivity extends AppCompatActivity implements LocationPickDialo
     }
 
     private void registerGPSIfAllowed() {
-        if (mMainViewModel.isDestinationValid()
+        if (mainViewModel.isDestinationValid()
                 && arePermissionsGranted()) {
-            mMainViewModel.registerGPS(this);
+            mainViewModel.registerGPS(this);
         }
     }
 

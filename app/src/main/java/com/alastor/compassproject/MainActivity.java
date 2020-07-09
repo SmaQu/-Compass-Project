@@ -160,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements LocationPickDialo
                 = (ConstraintLayout.LayoutParams) destinationArrowIv.getLayoutParams();
         layoutParams.circleAngle = realDirection;
         destinationArrowIv.setLayoutParams(layoutParams);
-        
+
         destinationArrowIv.startAnimation(getRotationAnimation(currentDirectionDegree, realDirection));
     }
 
@@ -170,5 +170,6 @@ public class MainActivity extends AppCompatActivity implements LocationPickDialo
                 Animation.RELATIVE_TO_SELF, 0.5f);
         rotateAnimation.setDuration(500);
         rotateAnimation.setFillAfter(true);
+        return rotateAnimation;
     }
 }

@@ -1,4 +1,4 @@
-package com.alastor.compassproject
+package com.alastor.compassproject.viewmodel
 
 import android.app.Activity
 import android.app.Application
@@ -10,6 +10,10 @@ import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.alastor.compassproject.module.compass.CompassCallback
+import com.alastor.compassproject.module.compass.CompassModule
+import com.alastor.compassproject.module.gps.GPSCallback
+import com.alastor.compassproject.module.gps.GPSModule
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient

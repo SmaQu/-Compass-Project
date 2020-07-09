@@ -1,4 +1,4 @@
-package com.alastor.compassproject
+package com.alastor.compassproject.module.gps
 
 import android.annotation.SuppressLint
 import android.app.Activity

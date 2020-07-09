@@ -1,14 +1,12 @@
-package com.alastor.compassproject
+package com.alastor.compassproject.module.compass
 
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
-import kotlin.math.roundToInt
 
 class CompassModule(private val mSensorManager: SensorManager,
                     private val mCallback: CompassCallback) : SensorEventListener, LifecycleObserver {

@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">CompassProject</string>
+    <string name="compass">Kompas</string>
+    <string name="destination_arrow">Sztrzłka kierunkowa</string>
+    <string name="longitude">Długość geograficzna</string>
+    <string name="latitude">Szerokość geograficzna</string>
+</resources>

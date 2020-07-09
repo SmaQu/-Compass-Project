@@ -7,7 +7,6 @@ import android.content.Context
 import android.hardware.GeomagneticField
 import android.hardware.SensorManager
 import android.location.Location
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -23,7 +22,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private var mAzimuth = 0f;
     private var mCurrentLocation: Location? = null
-    private var mDesireLocation: Location? = null
+    private var mDesiredLocation: Location? = null
 
     val errorGoogleService: LiveData<Dialog>
         get() = errorGoogleServiceData
@@ -37,9 +36,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         get() = compassDirectionData
     private val compassDirectionData = MutableLiveData<Float>()
 
-    val desireLocationDirection: LiveData<Float>
-        get() = desireLocationDirectionData
-    private val desireLocationDirectionData = MutableLiveData<Float>()
+    val desiredLocationDirection: LiveData<Float>
+        get() = desiredLocationDirectionData
+    private val desiredLocationDirectionData = MutableLiveData<Float>()
 
     var mSelectedLatitude: Double? = null
     var mSelectedLongitude: Double? = null
@@ -121,11 +120,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     System.currentTimeMillis())
 
             mAzimuth -= geomagneticField.declination
-            mDesireLocation = Location("").apply {
+            mDesiredLocation = Location("").apply {
                 latitude = mSelectedLatitude as Double
                 longitude = mSelectedLongitude as Double
             }
-            var bearTo = mCurrentLocation!!.bearingTo(mDesireLocation)
+            var bearTo = mCurrentLocation!!.bearingTo(mDesiredLocation)
 
             if (bearTo < 0) {
                 bearTo += 360
@@ -138,7 +137,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 direction += 360
             }
 
-            desireLocationDirectionData.value = direction
+            desiredLocationDirectionData.value = direction
         }
     }
 }

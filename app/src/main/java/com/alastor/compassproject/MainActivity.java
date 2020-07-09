@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements LocationPickDialo
         });
 
         mMainViewModel.getCompassDirection().observe(this, this::updateCompassDirection);
-        mMainViewModel.getDesireLocationDirection().observe(this, this::updateDesireDirection);
+        mMainViewModel.getDesiredLocationDirection().observe(this, this::updateDesiredDirection);
         mMainViewModel.getErrorGoogleService().observe(this, this::showGoogleServiceErrorDialog);
         mMainViewModel.getErrorLackOfSetting().observe(this, this::showLacOfSettingsErrorDialog);
     }
@@ -148,10 +148,10 @@ public class MainActivity extends AppCompatActivity implements LocationPickDialo
     private void updateCompassDirection(float direction) {
         float revertedDirection = -direction;
         currentNeedleDegree = revertedDirection;
-        compassIv.startAnimation(getRotationAnimation(currentDirectionDegree, revertedDirection));
+        compassIv.startAnimation(getRotateAnimation(currentNeedleDegree, revertedDirection));
     }
 
-    private void updateDesireDirection(float direction) {
+    private void updateDesiredDirection(float direction) {
         float realDirection = currentNeedleDegree + direction;
         destinationArrowIv.setVisibility(View.VISIBLE);
         currentDirectionDegree = realDirection;
@@ -161,10 +161,11 @@ public class MainActivity extends AppCompatActivity implements LocationPickDialo
         layoutParams.circleAngle = realDirection;
         destinationArrowIv.setLayoutParams(layoutParams);
 
-        destinationArrowIv.startAnimation(getRotationAnimation(currentDirectionDegree, realDirection));
+
+        destinationArrowIv.startAnimation(getRotateAnimation(currentDirectionDegree, realDirection));
     }
 
-    private RotateAnimation getRotationAnimation(float currentDirection, float direction) {
+    private RotateAnimation getRotateAnimation(float currentDirection, float direction) {
         RotateAnimation rotateAnimation = new RotateAnimation(currentDirection, direction,
                 Animation.RELATIVE_TO_SELF, 0.5f,
                 Animation.RELATIVE_TO_SELF, 0.5f);

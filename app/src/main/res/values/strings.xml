@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">CompassProject</string>
+    <string name="compass">Compass</string>
 </resources>

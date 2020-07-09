@@ -28,9 +28,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         get() = errorLackOfSettingData
     private val errorLackOfSettingData = MutableLiveData<ResolvableApiException>()
 
-    val compassDirection: LiveData<Int>
+    val compassDirection: LiveData<Float>
         get() = compassDirectionData
-    private val compassDirectionData = MutableLiveData<Int>()
+    private val compassDirectionData = MutableLiveData<Float>()
 
     val desireLocationDirection: LiveData<Int>
         get() = desireLocationDirectionData
@@ -51,7 +51,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val mCompassModule = CompassModule((application.getSystemService(Context.SENSOR_SERVICE) as SensorManager),
             object : CompassCallback {
-                override fun onSensorChanged(degree: Int, azimuth: Float) {
+                override fun onSensorChanged(degree: Float, azimuth: Float) {
                     mAzimuth = azimuth
                     getArrowDegree()
 

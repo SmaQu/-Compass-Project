@@ -4,8 +4,12 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.opengl.Matrix;
 import android.os.Bundle;
-import android.widget.TextView;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
+import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,14 +27,14 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 0;
     private static final int REQUEST_CHECK_SETTINGS = 1;
     private MainViewModel mMainViewModel;
+    private float currentNeedleDegree = 0f;
+    private ImageView compassIv;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        final TextView zAxis = findViewById(R.id.tv_z_axis);
-        zAxis.setOnClickListener(v -> mMainViewModel.registerGPS(this)
-        );
+        compassIv = findViewById(R.id.image_compass);
 
         mMainViewModel = new ViewModelProvider(this,
                 new ViewModelProvider.AndroidViewModelFactory(getApplication())).get(MainViewModel.class);
@@ -106,8 +110,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void updateCompassDirection(int direction) {
-
+    private void updateCompassDirection(float direction) {
+        currentNeedleDegree = -direction;
+        RotateAnimation rotateAnimation = new RotateAnimation(currentNeedleDegree, -direction,
+                Animation.RELATIVE_TO_SELF, 0.5f,
+                Animation.RELATIVE_TO_SELF, 0.5f);
+        rotateAnimation.setDuration(50);
+        rotateAnimation.setInterpolator(new LinearInterpolator());
+        compassIv.startAnimation(rotateAnimation);
     }
 
     private void updateDesireDirection(int direction) {

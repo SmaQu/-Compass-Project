@@ -61,7 +61,7 @@ class CompassModule(private val mSensorManager: SensorManager,
                 if (success) {
                     val orientation = FloatArray(3)
                     SensorManager.getOrientation(rotationMatrix, orientation)
-                    var degree: Int = Math.toDegrees(orientation[0].toDouble()).roundToInt()
+                    var degree: Float = Math.toDegrees(orientation[0].toDouble()).toFloat()
                     if (degree < 0) {
                         degree += 360
                     }

@@ -20,6 +20,10 @@ import com.google.android.gms.location.FusedLocationProviderClient
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
+    companion object {
+        private const val FULL_CIRCLE_DEGREE = 360
+    }
+
     private var mAzimuth = 0f;
     private var mCurrentLocation: Location? = null
     private var mDesiredLocation: Location? = null
@@ -42,20 +46,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     var mSelectedLatitude: Double? = null
     var mSelectedLongitude: Double? = null
-    var isDestinationValid = false
-        get() {
-            return mSelectedLatitude != null && mSelectedLongitude != null
-        }
 
     var isGPSEnabled = false
-    private var mGPSModule: GPSModule? = null
-        get() {
-            if (field == null) {
-                field = GPSModule(FusedLocationProviderClient(getApplication<Application>().baseContext),
-                        GoogleApiAvailability.getInstance(), getGPSCallbacks())
-            }
-            return field
-        }
+    private val mGPSModule: GPSModule by lazy {
+        GPSModule(FusedLocationProviderClient(getApplication<Application>().baseContext),
+                GoogleApiAvailability.getInstance(), getGPSCallbacks())
+    }
+
 
     private val mCompassModule = CompassModule((application.getSystemService(Context.SENSOR_SERVICE) as SensorManager),
             object : CompassCallback {
@@ -70,9 +67,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             })
 
     override fun onCleared() {
-        super.onCleared()
         unRegisterCompass()
         unRegisterGPS()
+        super.onCleared()
     }
 
     public fun registerCompass() {
@@ -84,11 +81,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     public fun registerGPS(activity: Activity) {
-        mGPSModule!!.register(activity)
+        mGPSModule.register(activity)
     }
 
     public fun unRegisterGPS() {
-        mGPSModule!!.unregister()
+        mGPSModule.unregister()
+    }
+
+    public fun isDestinationValid(): Boolean {
+        return mSelectedLatitude != null && mSelectedLongitude != null
     }
 
     private fun getGPSCallbacks(): GPSCallback {
@@ -113,7 +114,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun getArrowDegree() {
-        if (isDestinationValid && mCurrentLocation != null) {
+        if (isDestinationValid() && mCurrentLocation != null) {
             val geomagneticField = GeomagneticField(mCurrentLocation!!.latitude.toFloat(),
                     mCurrentLocation!!.longitude.toFloat(),
                     mCurrentLocation!!.altitude.toFloat(),
@@ -127,7 +128,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             var bearTo = mCurrentLocation!!.bearingTo(mDesiredLocation)
 
             if (bearTo < 0) {
-                bearTo += 360
+                bearTo += FULL_CIRCLE_DEGREE
             }
 
             var direction = bearTo - mAzimuth

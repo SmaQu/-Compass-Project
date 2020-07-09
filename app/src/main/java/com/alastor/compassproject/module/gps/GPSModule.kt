@@ -10,14 +10,14 @@ import com.google.android.gms.location.*
 import com.google.android.gms.tasks.Task
 import java.lang.ref.WeakReference
 
-class GPSModule(private val mFusedLocationProviderClient: FusedLocationProviderClient,
-                private val mGoogleApiAvailability: GoogleApiAvailability,
+class GPSModule(private val fusedLocationProviderClient: FusedLocationProviderClient,
+                private val googleApiAvailability: GoogleApiAvailability,
                 gpsCallback: GPSCallback) {
 
     private var isGoogleServiceChecked: Boolean = false
     private var isLocationSettingsChecked: Boolean = false
 
-    private var mGPSCallbackWeakReference: WeakReference<GPSCallback> = WeakReference(gpsCallback)
+    private var gpsCallbackWeakReference: WeakReference<GPSCallback> = WeakReference(gpsCallback)
 
     private val locationRequest = LocationRequest.create().apply {
         interval = 10000
@@ -29,7 +29,8 @@ class GPSModule(private val mFusedLocationProviderClient: FusedLocationProviderC
         override fun onLocationResult(locationResult: LocationResult?) {
             locationResult ?: return
             for (location in locationResult.locations) {
-                mGPSCallbackWeakReference.get()?.let {
+                Log.e("TAG", "onLocationResult: $location + ${gpsCallbackWeakReference.get()}" )
+                gpsCallbackWeakReference.get()?.let {
                     it.onLocationDetect(location)
                 }
             }
@@ -42,15 +43,15 @@ class GPSModule(private val mFusedLocationProviderClient: FusedLocationProviderC
     }
 
     public fun unregister() {
-        mFusedLocationProviderClient.removeLocationUpdates(locationCallback)
+        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
     }
 
     private fun checkGooglePlayService(activity: Activity) {
-        val code = mGoogleApiAvailability.isGooglePlayServicesAvailable(activity.baseContext)
+        val code = googleApiAvailability.isGooglePlayServicesAvailable(activity.baseContext)
         if (!isGooglePlayServicesAvailable(code)) {
-            val dialog = mGoogleApiAvailability.getErrorDialog(activity, code, 0)
+            val dialog = googleApiAvailability.getErrorDialog(activity, code, 0)
             isLocationSettingsChecked = false
-            mGPSCallbackWeakReference.get()?.let {
+            gpsCallbackWeakReference.get()?.let {
                 it.onGooglePlayServicesOutDate(dialog)
             }
         }
@@ -68,7 +69,7 @@ class GPSModule(private val mFusedLocationProviderClient: FusedLocationProviderC
             addOnFailureListener { exception ->
                 if (exception is ResolvableApiException) {
                     isLocationSettingsChecked = false
-                    mGPSCallbackWeakReference.get()?.let {
+                    gpsCallbackWeakReference.get()?.let {
                         it.onLackOfLocationSettings(exception)
                     }
                 }
@@ -83,7 +84,7 @@ class GPSModule(private val mFusedLocationProviderClient: FusedLocationProviderC
     @SuppressLint("MissingPermission")
     private fun maybeNotifySuccessRegister() {
         if (isGoogleServiceChecked && isLocationSettingsChecked) {
-            mFusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null)
+            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null)
         }
     }
 

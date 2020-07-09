@@ -4,68 +4,62 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
 
-class CompassModule(private val mSensorManager: SensorManager,
-                    private val mCallback: CompassCallback) : SensorEventListener, LifecycleObserver {
+class CompassModule(private val sensorManager: SensorManager,
+                    private val callback: CompassCallback) : SensorEventListener, LifecycleObserver {
 
-    private val mAccelerometer: Sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-    private val mMagnetometer: Sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+    companion object {
+        private const val FULL_CIRCLE_DEGREE = 360
+    }
+
+    private val accelerometer: Sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+    private val magnetometer: Sensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
     // Current data from accelerometer & magnetometer.  The arrays hold values
     // for X, Y, and Z.
-    private var mGravity: FloatArray? = null
-    private var mGeomagnetic: FloatArray? = null
+    private var gravity: FloatArray? = null
+    private var geomagnetic: FloatArray? = null
 
-    private var mLifecycle: Lifecycle? = null;
+    private var lifecycle: Lifecycle? = null;
 
-    constructor(mSensorManager: SensorManager,
-                mLifecycle: Lifecycle,
-                callback: CompassCallback) : this(mSensorManager, callback) {
-        this.mLifecycle = mLifecycle
-        mLifecycle.addObserver(this);
-    }
-
-    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     fun registerListener() {
-        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL)
-        mSensorManager.registerListener(this, mMagnetometer, SensorManager.SENSOR_DELAY_NORMAL)
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+        sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL)
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
     fun unregisterListener() {
-        mSensorManager.unregisterListener(this)
+        sensorManager.unregisterListener(this)
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-
+        //no-op
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
         event?.let {
             if (it.sensor.type == Sensor.TYPE_ACCELEROMETER) {
-                mGravity = it.values
-                mCallback.onSensorAccelerometerAzimuth(it.values[0])
+                gravity = it.values
+                callback.onSensorAccelerometerAzimuth(it.values[0])
             }
             if (it.sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
-                mGeomagnetic = it.values
+                geomagnetic = it.values
             }
             val rotationMatrix = FloatArray(9)
 
-            if (mGravity != null && mGeomagnetic != null) {
-                val success = SensorManager.getRotationMatrix(rotationMatrix, null, mGravity, mGeomagnetic)
+            if (gravity != null && geomagnetic != null) {
+                val success = SensorManager.getRotationMatrix(rotationMatrix, null, gravity, geomagnetic)
                 if (success) {
                     val orientation = FloatArray(3)
                     SensorManager.getOrientation(rotationMatrix, orientation)
                     var degree: Float = Math.toDegrees(orientation[0].toDouble()).toFloat()
                     if (degree < 0) {
-                        degree += 360
+                        degree += FULL_CIRCLE_DEGREE
                     }
 
-                    mCallback.onSensorDegree(degree)
+                    callback.onSensorDegree(degree)
                 }
             }
         }

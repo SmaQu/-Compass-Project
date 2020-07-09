@@ -28,7 +28,7 @@
         android:visibility="gone"
         tools:visibility="visible"
         app:layout_constraintCircle="@+id/image_compass"
-        app:layout_constraintCircleRadius="115dp"
+        app:layout_constraintCircleRadius="@dimen/arrow_offset"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="arrow_offset">115dp</dimen>
+    <dimen name="default_margin">12dp</dimen>
+    <dimen name="big_text_size">24sp</dimen>
+</resources>

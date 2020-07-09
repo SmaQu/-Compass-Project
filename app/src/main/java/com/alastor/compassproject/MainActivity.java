@@ -161,7 +161,6 @@ public class MainActivity extends AppCompatActivity implements LocationPickDialo
         layoutParams.circleAngle = realDirection;
         destinationArrowIv.setLayoutParams(layoutParams);
 
-
         destinationArrowIv.startAnimation(getRotateAnimation(currentDirectionDegree, realDirection));
     }
 

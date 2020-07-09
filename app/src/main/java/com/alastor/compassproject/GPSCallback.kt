@@ -2,11 +2,12 @@ package com.alastor.compassproject
 
 import android.app.Dialog
 import android.location.Location
+import com.google.android.gms.common.api.ResolvableApiException
 
 interface GPSCallback {
     fun onLocationDetect(location: Location)
 
     fun onGooglePlayServicesOutDate(dialog : Dialog)
 
-    fun onLackOfLocationSettings()
+    fun onLackOfLocationSettings(resolvableApiException: ResolvableApiException)
 }

@@ -7,30 +7,39 @@ import android.content.Context
 import android.hardware.GeomagneticField
 import android.hardware.SensorManager
 import android.location.Location
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.google.android.gms.common.GoogleApiAvailability
+import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    private var mCurrentDegreeDirection = 0
     private var mAzimuth = 0f;
     private var mCurrentLocation: Location? = null
     private var mDesireLocation: Location? = null
 
-    var mSelectedLatitude: Double? = null
-        set(value) {
-            field = value
-            maybeEnableGPS()
-        }
-    var mSelectedLongitude: Double? = null
-        set(value) {
-            field = value
-            maybeEnableGPS()
-        }
+    val errorGoogleService: LiveData<Dialog>
+        get() = errorGoogleServiceData
+    private val errorGoogleServiceData = MutableLiveData<Dialog>()
 
-    var isGPSEnabled = true
+    val errorLackOfSetting: LiveData<ResolvableApiException>
+        get() = errorLackOfSettingData
+    private val errorLackOfSettingData = MutableLiveData<ResolvableApiException>()
+
+    val compassDirection: LiveData<Int>
+        get() = compassDirectionData
+    private val compassDirectionData = MutableLiveData<Int>()
+
+    val desireLocationDirection: LiveData<Int>
+        get() = desireLocationDirectionData
+    private val desireLocationDirectionData = MutableLiveData<Int>()
+
+    var mSelectedLatitude: Double? = null
+    var mSelectedLongitude: Double? = null
+
+    var isGPSEnabled = false
     private var mGPSModule: GPSModule? = null
         get() {
             if (field == null) {
@@ -40,14 +49,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return field
         }
 
-    val mCompassModule = CompassModule((application.getSystemService(Context.SENSOR_SERVICE) as SensorManager),
+    private val mCompassModule = CompassModule((application.getSystemService(Context.SENSOR_SERVICE) as SensorManager),
             object : CompassCallback {
                 override fun onSensorChanged(degree: Int, azimuth: Float) {
-                    mCurrentDegreeDirection = degree
                     mAzimuth = azimuth
-
                     getArrowDegree()
-                    Log.e("TAG", "onSensorChanged: $degree")
+
+                    compassDirectionData.value = degree
                 }
             })
 
@@ -57,45 +65,47 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         mGPSModule!!.unregister()
     }
 
-    public fun enableGPS(activity: Activity) {
-        if (isGPSEnabled) {
-            mGPSModule!!.register(activity)
-        }
+    public fun registerCompass() {
+        mCompassModule.registerListener()
     }
 
-    private fun maybeEnableGPS() {
-        if (mSelectedLatitude != null && mSelectedLongitude != null) {
-            mDesireLocation = Location("").apply {
-                latitude = mSelectedLatitude as Double
-                longitude = mSelectedLongitude as Double
-            }
-        }
+    public fun unRegisterCompass() {
+        mCompassModule.unregisterListener()
+    }
+
+    public fun registerGPS(activity: Activity) {
+        mGPSModule!!.register(activity)
+    }
+
+    public fun unRegisterGPS() {
+        mGPSModule!!.unregister()
     }
 
     private fun getGPSCallbacks(): GPSCallback {
         return object : GPSCallback {
             override fun onLocationDetect(location: Location) {
+                isGPSEnabled = true
                 mCurrentLocation = location
-
-                //val arrowDegree = mCurrentLocation!!.bearingTo(mDesireLocation)
-                //Log.e("TAG", "onLocationDetect: $arrowDegree")
-                //TODO("Not yet implemented")
+                errorGoogleServiceData.value = null
+                errorLackOfSettingData.value = null
             }
 
             override fun onGooglePlayServicesOutDate(dialog: Dialog) {
-                Log.e("TAG", "onGooglePlayServicesOutDate: ")
-                //TODO("Not yet implemented")
+                mCurrentLocation = null
+                errorGoogleServiceData.value = dialog
             }
 
-            override fun onLackOfLocationSettings() {
-                Log.e("TAG", "onLackOfLocationSettings: ")
-                //TODO("Not yet implemented")
+            override fun onLackOfLocationSettings(resolvableApiException: ResolvableApiException) {
+                mCurrentLocation = null
+                errorLackOfSettingData.value = resolvableApiException
             }
         }
     }
 
     private fun getArrowDegree() {
-        if (mCurrentLocation != null) {
+        if (mSelectedLatitude != null
+                && mSelectedLongitude != null
+                && mCurrentLocation != null) {
             val geomagneticField = GeomagneticField(mCurrentLocation!!.latitude.toFloat(),
                     mCurrentLocation!!.longitude.toFloat(),
                     mCurrentLocation!!.altitude.toFloat(),
@@ -103,8 +113,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             mAzimuth -= geomagneticField.declination
             mDesireLocation = Location("").apply {
-                latitude = 50.148970
-                longitude = 19.370210
+                latitude = mSelectedLatitude as Double
+                longitude = mSelectedLongitude as Double
             }
             var bearTo = mCurrentLocation!!.bearingTo(mDesireLocation)
             if (bearTo < 0) {
@@ -113,12 +123,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             var direction = bearTo - mAzimuth
 
-            if (direction < 0 ) {
+            if (direction < 0) {
                 direction += 360
             }
 
-            Log.e("TAG", "direction: $direction")
+            desireLocationDirectionData.value = direction.toInt()
         }
     }
-
 }

@@ -24,9 +24,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private const val FULL_CIRCLE_DEGREE = 360
     }
 
-    private var mAzimuth = 0f;
-    private var mCurrentLocation: Location? = null
-    private var mDesiredLocation: Location? = null
+    private var azimuth = 0f;
+    private var currentLocation: Location? = null
+    private var desiredLocation: Location? = null
 
     val errorGoogleService: LiveData<Dialog>
         get() = errorGoogleServiceData
@@ -44,8 +44,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         get() = desiredLocationDirectionData
     private val desiredLocationDirectionData = MutableLiveData<Float>()
 
-    var mSelectedLatitude: Double? = null
-    var mSelectedLongitude: Double? = null
+    var selectedLatitude: Double? = null
+    var selectedLongitude: Double? = null
 
     var isGPSEnabled = false
     private val gpsModule: GPSModule by lazy {
@@ -53,7 +53,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 GoogleApiAvailability.getInstance(), getGPSCallbacks())
     }
 
-    private val mCompassModule = CompassModule((application.getSystemService(Context.SENSOR_SERVICE) as SensorManager),
+    private val compassModule = CompassModule((application.getSystemService(Context.SENSOR_SERVICE) as SensorManager),
             object : CompassCallback {
                 override fun onSensorDegree(degree: Float) {
                     compassDirectionData.value = degree
@@ -61,7 +61,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 override fun onSensorAccelerometerAzimuth(azimuth: Float) {
-                    mAzimuth = azimuth
+                    this@MainViewModel.azimuth = azimuth
                 }
             })
 
@@ -72,11 +72,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     public fun registerCompass() {
-        mCompassModule.registerListener()
+        compassModule.registerListener()
     }
 
     public fun unRegisterCompass() {
-        mCompassModule.unregisterListener()
+        compassModule.unregisterListener()
     }
 
     public fun registerGPS(activity: Activity) {
@@ -88,49 +88,49 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     public fun isDestinationValid(): Boolean {
-        return mSelectedLatitude != null && mSelectedLongitude != null
+        return selectedLatitude != null && selectedLongitude != null
     }
 
     private fun getGPSCallbacks(): GPSCallback {
         return object : GPSCallback {
             override fun onLocationDetect(location: Location) {
                 isGPSEnabled = true
-                mCurrentLocation = location
+                currentLocation = location
                 errorGoogleServiceData.value = null
                 errorLackOfSettingData.value = null
             }
 
             override fun onGooglePlayServicesOutDate(dialog: Dialog) {
-                mCurrentLocation = null
+                currentLocation = null
                 errorGoogleServiceData.value = dialog
             }
 
             override fun onLackOfLocationSettings(resolvableApiException: ResolvableApiException) {
-                mCurrentLocation = null
+                currentLocation = null
                 errorLackOfSettingData.value = resolvableApiException
             }
         }
     }
 
     private fun getArrowDegree() {
-        if (isDestinationValid() && mCurrentLocation != null) {
-            val geomagneticField = GeomagneticField(mCurrentLocation!!.latitude.toFloat(),
-                    mCurrentLocation!!.longitude.toFloat(),
-                    mCurrentLocation!!.altitude.toFloat(),
+        if (isDestinationValid() && currentLocation != null) {
+            val geomagneticField = GeomagneticField(currentLocation!!.latitude.toFloat(),
+                    currentLocation!!.longitude.toFloat(),
+                    currentLocation!!.altitude.toFloat(),
                     System.currentTimeMillis())
 
-            mAzimuth -= geomagneticField.declination
-            mDesiredLocation = Location("").apply {
-                latitude = mSelectedLatitude as Double
-                longitude = mSelectedLongitude as Double
+            azimuth -= geomagneticField.declination
+            desiredLocation = Location("").apply {
+                latitude = selectedLatitude as Double
+                longitude = selectedLongitude as Double
             }
-            var bearTo = mCurrentLocation!!.bearingTo(mDesiredLocation)
+            var bearTo = currentLocation!!.bearingTo(desiredLocation)
 
             if (bearTo < 0) {
                 bearTo += FULL_CIRCLE_DEGREE
             }
 
-            var direction = bearTo - mAzimuth
+            var direction = bearTo - azimuth
 
 
             if (direction < 0) {

@@ -99,10 +99,10 @@ public class MainActivity extends AppCompatActivity implements LocationPickDialo
     public void onDialogResponse(@NotNull String requestKey, double locationValue) {
         switch (requestKey) {
             case KEY_LATITUDE:
-                mMainViewModel.setMSelectedLatitude(locationValue);
+                mMainViewModel.setSelectedLatitude(locationValue);
                 break;
             case KEY_LONGITUDE:
-                mMainViewModel.setMSelectedLongitude(locationValue);
+                mMainViewModel.setSelectedLongitude(locationValue);
                 break;
         }
         registerGPSIfAllowed();

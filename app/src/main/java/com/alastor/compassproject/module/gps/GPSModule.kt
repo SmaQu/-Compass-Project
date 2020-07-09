@@ -29,7 +29,7 @@ class GPSModule(private val fusedLocationProviderClient: FusedLocationProviderCl
         override fun onLocationResult(locationResult: LocationResult?) {
             locationResult ?: return
             for (location in locationResult.locations) {
-                Log.e("TAG", "onLocationResult: $location + ${gpsCallbackWeakReference.get()}" )
+                Log.e("TAG", "onLocationResult: $location + ${gpsCallbackWeakReference.get()}")
                 gpsCallbackWeakReference.get()?.let {
                     it.onLocationDetect(location)
                 }

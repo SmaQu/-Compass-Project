@@ -6,7 +6,6 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
 
 class CompassModule(private val sensorManager: SensorManager,
                     private val callback: CompassCallback) : SensorEventListener, LifecycleObserver {

@@ -2,4 +2,6 @@
     <string name="app_name">CompassProject</string>
     <string name="compass">Compass</string>
     <string name="destination_arrow">Destination arrow</string>
+    <string name="longitude">Longitude</string>
+    <string name="latitude">Latitude</string>
 </resources>

@@ -7,30 +7,35 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
 import android.view.animation.Animation;
-import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.alastor.compassproject.dialog.LocationPickDialog;
 import com.alastor.compassproject.viewmodel.MainViewModel;
 import com.google.android.gms.common.api.ResolvableApiException;
+
+import org.jetbrains.annotations.NotNull;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements LocationPickDialog.NotifyDialogListener {
 
+    private static final String KEY_LATITUDE = "key_latitude";
+    private static final String KEY_LONGITUDE = "key_longitude";
     private static final int PERMISSION_REQUEST_CODE = 0;
     private static final int REQUEST_CHECK_SETTINGS = 1;
     private MainViewModel mMainViewModel;
     private float currentNeedleDegree = 0f;
-    private int currentDirectionDegree = 0;
+    private float currentDirectionDegree = 0f;
     private ImageView compassIv;
     private ImageView destinationArrowIv;
 
@@ -44,6 +49,14 @@ public class MainActivity extends AppCompatActivity {
         mMainViewModel = new ViewModelProvider(this,
                 new ViewModelProvider.AndroidViewModelFactory(getApplication())).get(MainViewModel.class);
 
+        findViewById(R.id.button_latitude).setOnClickListener(v -> {
+            openLocationDialog(KEY_LATITUDE, R.string.latitude);
+        });
+        findViewById(R.id.button_longitude).setOnClickListener(v -> {
+            openLocationDialog(KEY_LONGITUDE, R.string.longitude);
+
+        });
+
         mMainViewModel.getCompassDirection().observe(this, this::updateCompassDirection);
         mMainViewModel.getDesireLocationDirection().observe(this, this::updateDesireDirection);
         mMainViewModel.getErrorGoogleService().observe(this, this::showGoogleServiceErrorDialog);
@@ -54,7 +67,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mMainViewModel.registerCompass();
-        enableGPS();
+        if (mMainViewModel.isGPSEnabled())
+            registerGPSIfAllowed();
     }
 
     @Override
@@ -69,23 +83,39 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == PERMISSION_REQUEST_CODE &&
                 grantResults.length > 0 &&
                 grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            mMainViewModel.registerGPS(this);
+            registerGPSIfAllowed();
         }
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        switch (requestCode) {
-            case REQUEST_CHECK_SETTINGS:
-                if (resultCode == -1) {
-                    mMainViewModel.registerGPS(this);
-                }
+        if (requestCode == REQUEST_CHECK_SETTINGS && resultCode == -1) {
+            registerGPSIfAllowed();
         }
     }
 
-    private void enableGPS() {
-        if (mMainViewModel.isGPSEnabled() && arePermissionsGranted()) {
+    @Override
+    public void onDialogResponse(@NotNull String requestKey, double locationValue) {
+        switch (requestKey) {
+            case KEY_LATITUDE:
+                mMainViewModel.setMSelectedLatitude(locationValue);
+                break;
+            case KEY_LONGITUDE:
+                mMainViewModel.setMSelectedLongitude(locationValue);
+                break;
+        }
+        registerGPSIfAllowed();
+    }
+
+    private void openLocationDialog(String key, @StringRes int title) {
+        LocationPickDialog locationPickDialog = LocationPickDialog.create(getString(title), key);
+        locationPickDialog.show(getSupportFragmentManager(), LocationPickDialog.TAG);
+    }
+
+    private void registerGPSIfAllowed() {
+        if (mMainViewModel.isDestinationValid()
+                && arePermissionsGranted()) {
             mMainViewModel.registerGPS(this);
         }
     }
@@ -116,28 +146,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateCompassDirection(float direction) {
-        currentNeedleDegree = -direction;
-        RotateAnimation rotateAnimation = new RotateAnimation(currentNeedleDegree, -direction,
-                Animation.RELATIVE_TO_SELF, 0.5f,
-                Animation.RELATIVE_TO_SELF, 0.5f);
-        rotateAnimation.setDuration(1);
-        rotateAnimation.setInterpolator(new LinearInterpolator());
-        compassIv.startAnimation(rotateAnimation);
+        float revertedDirection = -direction;
+        currentNeedleDegree = revertedDirection;
+        compassIv.startAnimation(getRotationAnimation(currentDirectionDegree, revertedDirection));
     }
 
-    private void updateDesireDirection(int direction) {
+    private void updateDesireDirection(float direction) {
+        float realDirection = currentNeedleDegree + direction;
         destinationArrowIv.setVisibility(View.VISIBLE);
-        currentDirectionDegree = direction;
+        currentDirectionDegree = realDirection;
+
         ConstraintLayout.LayoutParams layoutParams
                 = (ConstraintLayout.LayoutParams) destinationArrowIv.getLayoutParams();
-        layoutParams.circleAngle = direction;
+        layoutParams.circleAngle = realDirection;
         destinationArrowIv.setLayoutParams(layoutParams);
+        
+        destinationArrowIv.startAnimation(getRotationAnimation(currentDirectionDegree, realDirection));
+    }
 
-        RotateAnimation rotateAnimation = new RotateAnimation(currentDirectionDegree, direction,
+    private RotateAnimation getRotationAnimation(float currentDirection, float direction) {
+        RotateAnimation rotateAnimation = new RotateAnimation(currentDirection, direction,
                 Animation.RELATIVE_TO_SELF, 0.5f,
                 Animation.RELATIVE_TO_SELF, 0.5f);
-        rotateAnimation.setDuration(1);
-        rotateAnimation.setInterpolator(new LinearInterpolator());
-        destinationArrowIv.startAnimation(rotateAnimation);
+        rotateAnimation.setDuration(500);
+        rotateAnimation.setFillAfter(true);
     }
 }

@@ -7,4 +7,11 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <style name="DialogStyleNoTitle" parent="Theme.AppCompat.Light.Dialog">
+        <item name="windowFixedWidthMajor">85%</item>
+        <item name="windowFixedWidthMinor">85%</item>
+        <item name="windowNoTitle">true</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
 </resources>

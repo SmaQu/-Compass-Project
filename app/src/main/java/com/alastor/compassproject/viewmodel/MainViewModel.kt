@@ -7,6 +7,7 @@ import android.content.Context
 import android.hardware.GeomagneticField
 import android.hardware.SensorManager
 import android.location.Location
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -36,12 +37,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         get() = compassDirectionData
     private val compassDirectionData = MutableLiveData<Float>()
 
-    val desireLocationDirection: LiveData<Int>
+    val desireLocationDirection: LiveData<Float>
         get() = desireLocationDirectionData
-    private val desireLocationDirectionData = MutableLiveData<Int>()
+    private val desireLocationDirectionData = MutableLiveData<Float>()
 
     var mSelectedLatitude: Double? = null
     var mSelectedLongitude: Double? = null
+    var isDestinationValid = false
+        get() {
+            return mSelectedLatitude != null && mSelectedLongitude != null
+        }
 
     var isGPSEnabled = false
     private var mGPSModule: GPSModule? = null
@@ -55,18 +60,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val mCompassModule = CompassModule((application.getSystemService(Context.SENSOR_SERVICE) as SensorManager),
             object : CompassCallback {
-                override fun onSensorChanged(degree: Float, azimuth: Float) {
-                    mAzimuth = azimuth
-                    getArrowDegree()
-
+                override fun onSensorDegree(degree: Float) {
                     compassDirectionData.value = degree
+                    getArrowDegree()
+                }
+
+                override fun onSensorAccelerometerAzimuth(azimuth: Float) {
+                    mAzimuth = azimuth
                 }
             })
 
     override fun onCleared() {
         super.onCleared()
-        mCompassModule.unregisterListener()
-        mGPSModule!!.unregister()
+        unRegisterCompass()
+        unRegisterGPS()
     }
 
     public fun registerCompass() {
@@ -107,9 +114,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun getArrowDegree() {
-        if (mSelectedLatitude != null
-                && mSelectedLongitude != null
-                && mCurrentLocation != null) {
+        if (isDestinationValid && mCurrentLocation != null) {
             val geomagneticField = GeomagneticField(mCurrentLocation!!.latitude.toFloat(),
                     mCurrentLocation!!.longitude.toFloat(),
                     mCurrentLocation!!.altitude.toFloat(),
@@ -121,17 +126,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 longitude = mSelectedLongitude as Double
             }
             var bearTo = mCurrentLocation!!.bearingTo(mDesireLocation)
+
             if (bearTo < 0) {
                 bearTo += 360
             }
 
             var direction = bearTo - mAzimuth
 
+
             if (direction < 0) {
                 direction += 360
             }
 
-            desireLocationDirectionData.value = direction.toInt()
+            desireLocationDirectionData.value = direction
         }
     }
 }

@@ -2,6 +2,7 @@ package com.alastor.compassproject.module.gps
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.util.Log
 import com.google.android.gms.common.ConnectionResult.*
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.api.ResolvableApiException

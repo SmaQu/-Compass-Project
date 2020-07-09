@@ -47,11 +47,11 @@ class CompassModule(private val mSensorManager: SensorManager,
         event?.let {
             if (it.sensor.type == Sensor.TYPE_ACCELEROMETER) {
                 mGravity = it.values
+                mCallback.onSensorAccelerometerAzimuth(it.values[0])
             }
             if (it.sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
                 mGeomagnetic = it.values
             }
-
             val rotationMatrix = FloatArray(9)
 
             if (mGravity != null && mGeomagnetic != null) {
@@ -63,7 +63,8 @@ class CompassModule(private val mSensorManager: SensorManager,
                     if (degree < 0) {
                         degree += 360
                     }
-                    mCallback.onSensorChanged(degree, it.values[0])
+
+                    mCallback.onSensorDegree(degree)
                 }
             }
         }

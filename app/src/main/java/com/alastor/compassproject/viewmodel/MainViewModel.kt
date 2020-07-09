@@ -53,7 +53,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 GoogleApiAvailability.getInstance(), getGPSCallbacks())
     }
 
-
     private val mCompassModule = CompassModule((application.getSystemService(Context.SENSOR_SERVICE) as SensorManager),
             object : CompassCallback {
                 override fun onSensorDegree(degree: Float) {

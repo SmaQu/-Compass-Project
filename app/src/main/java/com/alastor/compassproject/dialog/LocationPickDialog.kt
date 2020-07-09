@@ -13,6 +13,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatDialog
 import androidx.fragment.app.DialogFragment
 import com.alastor.compassproject.R
+import java.util.regex.Pattern
 
 class LocationPickDialog : DialogFragment() {
 
@@ -63,7 +64,8 @@ class LocationPickDialog : DialogFragment() {
     override fun onStop() {
         super.onStop()
         val inputValue = inputEt.text.toString()
-        if (!TextUtils.isEmpty(inputValue))
+        val matcher = Pattern.compile("\\d+(?:\\.\\d+)?").matcher(inputValue)
+        if (!TextUtils.isEmpty(inputValue) && matcher.find())
             listener.onDialogResponse(requestKey, inputValue.toDouble())
     }
 

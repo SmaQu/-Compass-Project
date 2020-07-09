@@ -46,6 +46,7 @@ dependencies {
     testImplementation 'androidx.test:core:1.2.0'
     testImplementation 'androidx.test:runner:1.2.0'
     testImplementation 'org.robolectric:robolectric:4.3'
+    testImplementation 'org.robolectric:shadows-playservices:3.8'
     testImplementation 'org.mockito:mockito-core:2.7.22'
 
 

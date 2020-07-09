@@ -8,6 +8,7 @@ import android.hardware.SensorManager;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SmallTest;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,7 +20,6 @@ import org.robolectric.shadows.ShadowSensorManager;
 import java.lang.reflect.Field;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -32,6 +32,7 @@ public class CompassModuleTest {
 
     private SensorManager sensorManager;
     private ShadowSensorManager shadowSensorManager;
+    private CompassModule compassModule;
 
     @Before
     public void setUp() {
@@ -41,6 +42,11 @@ public class CompassModuleTest {
         shadowSensorManager = shadowOf(sensorManager);
         shadowSensorManager.addSensor(ShadowSensor.newInstance(Sensor.TYPE_ACCELEROMETER));
         shadowSensorManager.addSensor(ShadowSensor.newInstance(Sensor.TYPE_MAGNETIC_FIELD));
+    }
+
+    @After
+    public void tearDown() {
+        compassModule.unregisterListener();
     }
 
     @Test
@@ -56,24 +62,24 @@ public class CompassModuleTest {
             }
         };
 
-        CompassModule compassModule = new CompassModule(sensorManager, compassCallback);
+        compassModule = new CompassModule(sensorManager, compassCallback);
         compassModule.registerListener();
         shadowSensorManager.sendSensorEventToListeners(getAccelerometerEventWithValues());
     }
 
     @Test
-    public void getDegree() throws Exception {
+    public void getDegree_should_return_expected_value() throws Exception {
         final CompassCallback compassCallback = new CompassCallback() {
             @Override
             public void onSensorDegree(float degree) {
-                assertEquals(EXPECTED_DEGREE, degree,0);
+                assertEquals(EXPECTED_DEGREE, degree, 0);
             }
 
             @Override
             public void onSensorAccelerometerAzimuth(float azimuth) {
             }
         };
-        CompassModule compassModule = new CompassModule(sensorManager, compassCallback);
+        compassModule = new CompassModule(sensorManager, compassCallback);
         compassModule.registerListener();
         shadowSensorManager.sendSensorEventToListeners(getAccelerometerEventWithValues());
         shadowSensorManager.sendSensorEventToListeners(getMagneticFieldEventWithValues());
@@ -90,7 +96,7 @@ public class CompassModuleTest {
 
         Field valuesField = SensorEvent.class.getField("values");
         valuesField.setAccessible(true);
-        float[] desiredValues = new float[]{EXPECTED_AZIMUTH, 100f,200f};
+        float[] desiredValues = new float[]{EXPECTED_AZIMUTH, 100f, 200f};
         valuesField.set(sensorEvent, desiredValues);
 
         return sensorEvent;
